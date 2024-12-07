@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">multiple-data-sources</string>
+    <string name="error_text">Something went wrong</string>
+    <string name="retry_btn">Retry</string>
 </resources>
