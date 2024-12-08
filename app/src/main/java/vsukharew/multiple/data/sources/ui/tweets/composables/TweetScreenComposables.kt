@@ -1,4 +1,4 @@
-package vsukharew.multiple.data.sources.ui.composables
+package vsukharew.multiple.data.sources.ui.tweets.composables
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,9 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import vsukharew.multiple.data.sources.App
-import vsukharew.multiple.data.sources.SingleTweetState
-import vsukharew.multiple.data.sources.SingleTweetViewModel
-import vsukharew.multiple.data.sources.SingleTweetViewModelFactory
+import vsukharew.multiple.data.sources.ui.tweets.single.SingleTweetState
+import vsukharew.multiple.data.sources.ui.tweets.single.SingleTweetViewModel
+import vsukharew.multiple.data.sources.ui.tweets.single.SingleTweetViewModelFactory
 import vsukharew.multiple.data.sources.domain.model.Tweet
 
 @Composable
@@ -51,7 +51,9 @@ fun SingleTweet(tweet: Tweet, modifier: Modifier = Modifier) {
 fun SingleTweetScreen(
     app: App,
     tweetId: String,
-    viewModel: SingleTweetViewModel = viewModel(factory = SingleTweetViewModelFactory(app, tweetId))
+    viewModel: SingleTweetViewModel = viewModel(
+        factory = SingleTweetViewModelFactory(app, tweetId)
+    )
 ) {
     when (val state = viewModel.uiState.collectAsState().value) {
         is SingleTweetState.MainProgress -> SingleTweetLoading()

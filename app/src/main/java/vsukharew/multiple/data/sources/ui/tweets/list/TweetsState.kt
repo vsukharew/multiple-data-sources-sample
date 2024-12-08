@@ -1,4 +1,4 @@
-package vsukharew.multiple.data.sources
+package vsukharew.multiple.data.sources.ui.tweets.list
 
 import androidx.annotation.StringRes
 import vsukharew.multiple.data.sources.domain.model.Tweet

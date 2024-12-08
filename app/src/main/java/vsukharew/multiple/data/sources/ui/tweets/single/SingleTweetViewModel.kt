@@ -1,4 +1,4 @@
-package vsukharew.multiple.data.sources
+package vsukharew.multiple.data.sources.ui.tweets.single
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel

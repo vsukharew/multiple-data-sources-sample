@@ -7,7 +7,7 @@ import vsukharew.multiple.data.sources.data.repository.TweetsRepo
 import vsukharew.multiple.data.sources.data.repository.TweetsRepository
 import vsukharew.multiple.data.sources.data.source.local.room.AppDatabase
 
-class ServiceLocator(private val context: Context) {
+class ServiceLocator(context: Context) {
     private val database = Room.databaseBuilder(
         context,
         AppDatabase::class.java,

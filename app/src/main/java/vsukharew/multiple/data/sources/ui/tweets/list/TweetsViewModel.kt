@@ -1,14 +1,14 @@
-package vsukharew.multiple.data.sources
+package vsukharew.multiple.data.sources.ui.tweets.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import vsukharew.multiple.data.sources.R
 import vsukharew.multiple.data.sources.data.repository.TweetsRepo
 import vsukharew.multiple.data.sources.domain.model.LoadStrategy
 import vsukharew.multiple.data.sources.domain.model.Source
-import vsukharew.multiple.data.sources.domain.model.Tweet
 import vsukharew.multiple.data.sources.domain.type.Either.Left
 import vsukharew.multiple.data.sources.domain.type.Either.Right
 

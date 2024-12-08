@@ -1,4 +1,4 @@
-package vsukharew.multiple.data.sources.ui.composables
+package vsukharew.multiple.data.sources.ui.tweets.composables
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -25,18 +25,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import vsukharew.multiple.data.sources.App
 import vsukharew.multiple.data.sources.R
-import vsukharew.multiple.data.sources.TweetsState
-import vsukharew.multiple.data.sources.TweetsViewModel
+import vsukharew.multiple.data.sources.ui.tweets.list.TweetsState
+import vsukharew.multiple.data.sources.ui.tweets.list.TweetsViewModel
 import vsukharew.multiple.data.sources.domain.model.Platform
 import vsukharew.multiple.data.sources.domain.model.Tweet
 import vsukharew.multiple.data.sources.ui.theme.MultipledatasourcesTheme
+import vsukharew.multiple.data.sources.ui.tweets.list.TweetsViewModelFactory
 
 @Composable
 fun TweetsScreen(
-    viewModel: TweetsViewModel,
+    app: App,
     onTweetClick: (Tweet) -> Unit,
+    viewModel: TweetsViewModel = viewModel(factory = TweetsViewModelFactory(app)),
     modifier: Modifier = Modifier
 ) {
     when (val uiState = viewModel.uiState.collectAsState().value) {

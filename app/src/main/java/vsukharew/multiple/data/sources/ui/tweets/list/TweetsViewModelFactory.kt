@@ -1,10 +1,9 @@
-package vsukharew.multiple.data
+package vsukharew.multiple.data.sources.ui.tweets.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import vsukharew.multiple.data.sources.App
-import vsukharew.multiple.data.sources.TweetsViewModel
 import kotlin.reflect.KClass
 
 class TweetsViewModelFactory(private val application: App) : ViewModelProvider.Factory {

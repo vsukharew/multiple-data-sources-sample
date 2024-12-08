@@ -8,16 +8,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import kotlinx.serialization.Serializable
-import vsukharew.multiple.data.TweetsViewModelFactory
-import vsukharew.multiple.data.sources.ui.composables.SingleTweetScreen
-import vsukharew.multiple.data.sources.ui.composables.TweetsScreen
 import vsukharew.multiple.data.sources.ui.theme.MultipledatasourcesTheme
+import vsukharew.multiple.data.sources.ui.tweets.SingleTweetRoute
+import vsukharew.multiple.data.sources.ui.tweets.TweetsListRoute
+import vsukharew.multiple.data.sources.ui.tweets.composables.SingleTweetScreen
+import vsukharew.multiple.data.sources.ui.tweets.composables.TweetsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,22 +28,19 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     NavHost(
                         navController = navController,
-                        startDestination = TweetsList
+                        startDestination = TweetsListRoute
                     ) {
-                        composable<TweetsList> {
+                        val app = application as App
+                        composable<TweetsListRoute> {
                             TweetsScreen(
-                                viewModel = viewModel(
-                                    factory = TweetsViewModelFactory(
-                                        application as App
-                                    )
-                                ),
-                                onTweetClick = { navController.navigate(SingleTweet(it.id)) },
+                                app = app,
+                                onTweetClick = { navController.navigate(SingleTweetRoute(it.id)) },
                                 modifier = Modifier.padding(padding)
                             )
                         }
-                        composable<SingleTweet> {
-                            val route: SingleTweet = it.toRoute()
-                            SingleTweetScreen(application as App, route.tweetId)
+                        composable<SingleTweetRoute> {
+                            val route = it.toRoute<SingleTweetRoute>()
+                            SingleTweetScreen(app = app, tweetId = route.tweetId)
                         }
                     }
                 }
@@ -52,9 +48,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
-@Serializable
-data object TweetsList
-
-@Serializable
-data class SingleTweet(val tweetId: String)
