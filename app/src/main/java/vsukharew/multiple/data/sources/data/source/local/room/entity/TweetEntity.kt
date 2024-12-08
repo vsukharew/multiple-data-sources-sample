@@ -20,10 +20,9 @@ import androidx.room.PrimaryKey
     ]
 )
 data class TweetEntity(
-    val externalId: String,
+    @PrimaryKey val id: String,
     val message: String,
     val authorId: Long,
     val platformId: Long,
-    val avatarUrl: String,
-    @PrimaryKey(autoGenerate = true) val id: Long = 0
+    val avatarUrl: String
 )

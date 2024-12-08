@@ -25,6 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.rememberNavController
 import vsukharew.multiple.data.sources.R
 import vsukharew.multiple.data.sources.TweetsState
 import vsukharew.multiple.data.sources.TweetsViewModel
@@ -34,15 +35,20 @@ import vsukharew.multiple.data.sources.ui.theme.MultipledatasourcesTheme
 
 @Composable
 fun TweetsScreen(
-    modifier: Modifier = Modifier,
-    viewModel: TweetsViewModel
+    viewModel: TweetsViewModel,
+    onTweetClick: (Tweet) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     when (val uiState = viewModel.uiState.collectAsState().value) {
         is TweetsState.Initial -> {}
         is TweetsState.MainProgress -> MainProgress(modifier)
-        is TweetsState.Error -> ErrorState(uiState, viewModel::retry, modifier)
-        is TweetsState.LastCachedTweets -> LastCachedTweets(uiState.tweets)
-        is TweetsState.Success -> ActualTweets(uiState.tweets, viewModel::retry)
+        is TweetsState.Error -> ErrorState(uiState, viewModel::onRetryClick, modifier)
+        is TweetsState.LastCachedTweets -> LastCachedTweets(uiState.tweets, onTweetClick)
+        is TweetsState.Success -> ActualTweets(
+            uiState.tweets,
+            viewModel::onRetryClick,
+            onTweetClick
+        )
     }
 }
 
@@ -62,10 +68,11 @@ fun MainProgress(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LastCachedTweets(
-    tweets: List<Tweet>
+    tweets: List<Tweet>,
+    onClick: (Tweet) -> Unit,
 ) {
     PullToRefreshBox(isRefreshing = true, onRefresh = {}) {
-        Tweets(tweets)
+        Tweets(tweets, onClick)
     }
 }
 
@@ -74,32 +81,42 @@ fun LastCachedTweets(
 fun ActualTweets(
     tweets: List<Tweet>,
     onRefresh: () -> Unit,
+    onClick: (Tweet) -> Unit,
 ) {
     PullToRefreshBox(isRefreshing = false, onRefresh = onRefresh) {
-        Tweets(tweets)
+        Tweets(tweets, onClick)
     }
 }
 
 @Composable
 fun Tweets(
     tweets: List<Tweet>,
+    onClick: (Tweet) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier) {
-        items(tweets) { Tweet(it) }
+        items(tweets) {
+            Tweet(
+                tweet = it,
+                onClick = onClick
+            )
+        }
     }
 }
 
 @Composable
 fun Tweet(
     tweet: Tweet,
-    modifier: Modifier = Modifier
+    onClick: (Tweet) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     with(tweet) {
         Surface(
             shape = MaterialTheme.shapes.medium,
             shadowElevation = 4.dp,
-            modifier = modifier.padding(8.dp).clickable{}
+            modifier = modifier
+                .padding(8.dp)
+                .clickable(onClick = { onClick.invoke(tweet) })
         ) {
             Text(
                 modifier = Modifier.padding(16.dp),
@@ -169,7 +186,7 @@ fun LastCachedTweetsPreview() {
                 "hero.png"
             )
         )
-    )
+    ) {}
 }
 
 @Composable
@@ -198,8 +215,8 @@ fun ActualTweetsPreview() {
                 author = "Elon Musk",
                 "hero.png"
             )
-        )
-    ) {}
+        ), {}, {}
+    )
 }
 
 @Composable
@@ -212,7 +229,7 @@ fun TweetPreview() {
             platform = Platform.ANDROID,
             author = "Elon Musk",
             "hero.png"
-        )
+        ), {}
     )
 }
 

@@ -3,6 +3,7 @@ package vsukharew.multiple.data.sources.di
 import android.content.Context
 import androidx.room.Room
 import com.google.gson.Gson
+import vsukharew.multiple.data.sources.data.repository.TweetsRepo
 import vsukharew.multiple.data.sources.data.repository.TweetsRepository
 import vsukharew.multiple.data.sources.data.source.local.room.AppDatabase
 
@@ -14,7 +15,7 @@ class ServiceLocator(private val context: Context) {
     ).build()
     private val gson = Gson()
 
-    val tweetsRepo = TweetsRepository(
+    val tweetsRepo: TweetsRepo = TweetsRepository(
         authorDao = database.authorDao(),
         tweetDao = database.tweetDao(),
         platformDao = database.platformDao(),

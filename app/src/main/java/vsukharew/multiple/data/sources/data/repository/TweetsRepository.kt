@@ -72,6 +72,22 @@ class TweetsRepository(
             }
         }
 
+    override suspend fun getTweet(
+        tweetId: String,
+        loadStrategy: LoadStrategy
+    ): Either<AppError<Any>, Tweet> {
+        return sideEffect {
+            when (loadStrategy) {
+                LoadStrategy.CACHE_ONLY -> {
+                    tweetDao.getTweetCombined(tweetId)
+                        ?.let(mapTweetCombinedToTweet::map)
+                        ?: AppError.OtherError(Exception()).left()
+                }
+                else -> TODO()
+            }
+        }
+    }
+
     override suspend fun getTweets(loadStrategy: LoadStrategy): Either<AppError<Any>, Flow<Pair<List<Tweet>, Source>>> {
         return sideEffect {
             when (loadStrategy) {
