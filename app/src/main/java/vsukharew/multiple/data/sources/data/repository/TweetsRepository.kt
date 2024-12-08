@@ -8,10 +8,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import vsukharew.multiple.data.sources.App
 import vsukharew.multiple.data.sources.data.source.local.room.dao.AuthorDao
 import vsukharew.multiple.data.sources.data.source.local.room.dao.PlatformDao
 import vsukharew.multiple.data.sources.data.source.local.room.dao.TweetDao
@@ -90,49 +89,131 @@ class TweetsRepository(
 
     override suspend fun getTweets(loadStrategy: LoadStrategy): Either<AppError<Any>, Flow<Pair<List<Tweet>, Source>>> {
         return sideEffect {
-            when (loadStrategy) {
+            val flow = when (loadStrategy) {
                 LoadStrategy.REMOTE_ONLY -> {
-                    (getAndSaveRemoteTweets(
+                    getTweetsRemoteFirst(
                         assets,
                         gson,
                         tweetDao,
                         platformDao,
                         authorDao,
-                        mapTweetResponseToTweetEntity
-                    ) to Source.REMOTE).let(::flowOf)
+                        mapTweetResponseToTweetEntity,
+                        mapTweetResponseToTweet
+                    )
                 }
-                LoadStrategy.CACHE_FIRST -> getTweetsCacheFirst()
+                LoadStrategy.CACHE_FIRST -> getTweetsCacheFirst(
+                    assets,
+                    gson,
+                    tweetDao,
+                    platformDao,
+                    authorDao,
+                    mapTweetResponseToTweetEntity,
+                    mapTweetCombinedToTweet,
+                    mapTweetResponseToTweet
+                )
                 else -> TODO()
+            }
+            flow.catch { left }
+        }
+    }
+
+    private fun EitherScope<AppError<Any>>.getTweetsRemoteFirst(
+        assets: AssetManager,
+        gson: Gson,
+        tweetDao: TweetDao,
+        platformDao: PlatformDao,
+        authorDao: AuthorDao,
+        mapTweetResponseToTweetEntity: suspend (TweetResponse, AuthorDao, PlatformDao) -> TweetEntity,
+        mapTweetResponseToTweet: Mapper<TweetResponse, Tweet>
+    ): Flow<Pair<List<Tweet>, Source>> {
+        val scope = this
+        return flow {
+            emitRemoteTweets(
+                scope,
+                assets,
+                gson,
+                tweetDao,
+                platformDao,
+                authorDao,
+                mapTweetResponseToTweetEntity,
+                mapTweetResponseToTweet
+            )
+        }
+    }
+
+    private suspend fun EitherScope<AppError<Any>>.getTweetsCacheFirst(
+        assets: AssetManager,
+        gson: Gson,
+        tweetDao: TweetDao,
+        platformDao: PlatformDao,
+        authorDao: AuthorDao,
+        mapTweetResponseToTweetEntity: suspend (TweetResponse, AuthorDao, PlatformDao) -> TweetEntity,
+        mapTweetCombinedToTweet: Mapper<TweetCombined, Tweet>,
+        mapTweetResponseToTweet: Mapper<TweetResponse, Tweet>
+    ): Flow<Pair<List<Tweet>, Source>> {
+        val scope = this
+        val areNoTweetsInDb = tweetDao.count() == 0L
+        return flow {
+            if (areNoTweetsInDb) {
+                emitRemoteTweets(
+                    scope,
+                    assets,
+                    gson,
+                    tweetDao,
+                    platformDao,
+                    authorDao,
+                    mapTweetResponseToTweetEntity,
+                    mapTweetResponseToTweet,
+                )
+            } else {
+                emitLocalTweets(scope, tweetDao, mapTweetCombinedToTweet)
+                emitRemoteTweets(
+                    scope,
+                    assets,
+                    gson,
+                    tweetDao,
+                    platformDao,
+                    authorDao,
+                    mapTweetResponseToTweetEntity,
+                    mapTweetResponseToTweet
+                )
             }
         }
     }
 
-    private suspend fun EitherScope<AppError<Any>>.getTweetsCacheFirst(): Flow<Pair<List<Tweet>, Source>> {
-        val areNoTweetsInDb = tweetDao.count() == 0L
-        return if (areNoTweetsInDb) {
+    private suspend fun FlowCollector<Pair<List<Tweet>, Source>>.emitLocalTweets(
+        scope: EitherScope<AppError<Any>>,
+        tweetDao: TweetDao,
+        mapTweetCombinedToTweet: Mapper<TweetCombined, Tweet>
+    ) {
+        with(scope) {
+            getLocalTweets(tweetDao, mapTweetCombinedToTweet)
+                .right()
+                .let { emit(it to Source.CACHE) }
+        }
+    }
+
+    private suspend fun FlowCollector<Pair<List<Tweet>, Source>>.emitRemoteTweets(
+        scope: EitherScope<AppError<Any>>,
+        assets: AssetManager,
+        gson: Gson,
+        tweetDao: TweetDao,
+        platformDao: PlatformDao,
+        authorDao: AuthorDao,
+        mapTweetResponseToTweetEntity: suspend (TweetResponse, AuthorDao, PlatformDao) -> TweetEntity,
+        mapTweetResponseToTweet: Mapper<TweetResponse, Tweet>,
+    ) {
+        with(scope) {
             val remoteTweets = getAndSaveRemoteTweets(
                 assets,
                 gson,
                 tweetDao,
                 platformDao,
                 authorDao,
-                mapTweetResponseToTweetEntity
+                mapTweetResponseToTweetEntity,
+                mapTweetResponseToTweet
             )
-            flowOf(remoteTweets to Source.REMOTE)
-        } else {
-            val localTweets = getLocalTweets(tweetDao, mapTweetCombinedToTweet).right()
-            flow {
-                emit(localTweets to Source.CACHE)
-                val remoteTweets = getAndSaveRemoteTweets(
-                    assets,
-                    gson,
-                    tweetDao,
-                    platformDao,
-                    authorDao,
-                    mapTweetResponseToTweetEntity
-                )
-                emit(remoteTweets to Source.REMOTE)
-            }.catch { left }
+            emit(remoteTweets to Source.REMOTE)
         }
     }
 
@@ -142,7 +223,8 @@ class TweetsRepository(
         tweetDao: TweetDao,
         platformDao: PlatformDao,
         authorDao: AuthorDao,
-        mapper: suspend (TweetResponse, AuthorDao, PlatformDao) -> TweetEntity
+        mapTweetResponseToTweetEntity: suspend (TweetResponse, AuthorDao, PlatformDao) -> TweetEntity,
+        mapTweetResponseToTweet: Mapper<TweetResponse, Tweet>
     ): List<Tweet> {
         delay(3000L)
         return getRemoteTweets(assets, gson).right()
@@ -152,7 +234,7 @@ class TweetsRepository(
                     tweetDao,
                     platformDao,
                     authorDao,
-                    mapper
+                    mapTweetResponseToTweetEntity
                 )
             }
             .map(mapTweetResponseToTweet::map)
