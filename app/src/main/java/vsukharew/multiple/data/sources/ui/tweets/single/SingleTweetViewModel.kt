@@ -1,32 +1,34 @@
 package vsukharew.multiple.data.sources.ui.tweets.single
 
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import vsukharew.multiple.data.sources.data.repository.TweetsRepo
 import vsukharew.multiple.data.sources.domain.model.LoadStrategy
 import vsukharew.multiple.data.sources.domain.type.Either
+import vsukharew.multiple.data.sources.ui.base.BaseViewModel
 
 class SingleTweetViewModel(
     private val tweetsRepository: TweetsRepo,
-    savedStateHandle: SavedStateHandle,
-) : ViewModel() {
-    private val mutableUiState = MutableStateFlow<SingleTweetState>(SingleTweetState.MainProgress)
-    val uiState = mutableUiState.asStateFlow()
+    private val savedStateHandle: SavedStateHandle,
+) : BaseViewModel<SingleTweetState, SingleTweetEvent, Nothing>(
+    SingleTweetReducer,
+    SingleTweetState.Initial
+) {
 
-    init {
+    fun startLoading() {
         savedStateHandle.get<String>(KEY_TWEET_ID)?.let(::getTweet)
     }
 
     fun getTweet(tweetId: String) {
+        setEvent(SingleTweetEvent.FirstLoad)
         viewModelScope.launch {
-            when (val tweet = tweetsRepository.getTweet(tweetId, LoadStrategy.CACHE_ONLY)) {
-                is Either.Left -> {}
+            when (val getTweet = tweetsRepository.getTweet(tweetId, LoadStrategy.CACHE_ONLY)) {
+                is Either.Left -> {
+                    // don't expect error when loading from cache
+                }
                 is Either.Right -> {
-                    mutableUiState.value = SingleTweetState.Success(tweet.data)
+                    setEvent(SingleTweetEvent.TweetLoaded(getTweet.data))
                 }
             }
         }

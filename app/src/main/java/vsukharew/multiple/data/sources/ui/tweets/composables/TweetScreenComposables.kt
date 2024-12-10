@@ -56,6 +56,7 @@ fun SingleTweetScreen(
     )
 ) {
     when (val state = viewModel.uiState.collectAsState().value) {
+        is SingleTweetState.Initial -> viewModel.startLoading()
         is SingleTweetState.MainProgress -> SingleTweetLoading()
         is SingleTweetState.Success -> SingleTweet(state.tweet)
     }

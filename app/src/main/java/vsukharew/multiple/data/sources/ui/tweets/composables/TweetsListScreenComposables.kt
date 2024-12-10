@@ -1,5 +1,6 @@
 package vsukharew.multiple.data.sources.ui.tweets.composables
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,13 +19,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import vsukharew.multiple.data.sources.App
 import vsukharew.multiple.data.sources.R
@@ -33,24 +39,41 @@ import vsukharew.multiple.data.sources.ui.tweets.list.TweetsViewModel
 import vsukharew.multiple.data.sources.domain.model.Platform
 import vsukharew.multiple.data.sources.domain.model.Tweet
 import vsukharew.multiple.data.sources.ui.theme.MultipledatasourcesTheme
+import vsukharew.multiple.data.sources.ui.tweets.list.TweetsEffect
 import vsukharew.multiple.data.sources.ui.tweets.list.TweetsViewModelFactory
 
 @Composable
 fun TweetsScreen(
-    app: App,
-    onTweetClick: (Tweet) -> Unit,
-    viewModel: TweetsViewModel = viewModel(factory = TweetsViewModelFactory(app)),
+    onNavigateToTweet: (Tweet) -> Unit,
+    viewModel: TweetsViewModel = viewModel(
+        factory = TweetsViewModelFactory(
+            LocalContext.current.applicationContext as App
+        )
+    ),
     modifier: Modifier = Modifier
 ) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val effectsFlow = viewModel.sideEffectsFlow.let { flow ->
+        remember(flow) { flow.flowWithLifecycle(lifecycle) }
+    }
+    val context = LocalContext.current
+    LaunchedEffect(effectsFlow) {
+        effectsFlow.collect {
+            when (it) {
+                is TweetsEffect.ShowLoadingErrorSnackBar -> Toast.makeText(context, "Error while loading tweets", Toast.LENGTH_LONG).show()
+                is TweetsEffect.NavigateToSingleTweetScreen -> onNavigateToTweet.invoke(it.tweet)
+            }
+        }
+    }
     when (val uiState = viewModel.uiState.collectAsState().value) {
-        is TweetsState.Initial -> {}
+        is TweetsState.Initial -> { viewModel.startLoading() }
         is TweetsState.MainProgress -> MainProgress(modifier)
         is TweetsState.Error -> ErrorState(uiState, viewModel::onRetryClick, modifier)
-        is TweetsState.LastCachedTweets -> LastCachedTweets(uiState.tweets, onTweetClick)
+        is TweetsState.LastCachedTweets -> LastCachedTweets(uiState.tweets, viewModel::onTweetClick)
         is TweetsState.Success -> ActualTweets(
             uiState.tweets,
             viewModel::onRetryClick,
-            onTweetClick
+            viewModel::onTweetClick
         )
     }
 }

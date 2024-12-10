@@ -8,6 +8,9 @@ import kotlin.reflect.KClass
 
 class TweetsViewModelFactory(private val application: App) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
-        return TweetsViewModel(application.serviceLocator.tweetsRepo) as T
+        return TweetsViewModel(
+            application.serviceLocator.tweetsRepo,
+            TweetsReducer
+        ) as T
     }
 }

@@ -24,7 +24,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MultipledatasourcesTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                ) { padding ->
                     val navController = rememberNavController()
                     NavHost(
                         navController = navController,
@@ -33,8 +35,7 @@ class MainActivity : ComponentActivity() {
                         val app = application as App
                         composable<TweetsListRoute> {
                             TweetsScreen(
-                                app = app,
-                                onTweetClick = { navController.navigate(SingleTweetRoute(it.id)) },
+                                onNavigateToTweet = { navController.navigate(SingleTweetRoute(it.id)) },
                                 modifier = Modifier.padding(padding)
                             )
                         }
