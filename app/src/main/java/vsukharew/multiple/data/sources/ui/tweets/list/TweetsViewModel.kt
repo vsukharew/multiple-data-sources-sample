@@ -1,6 +1,8 @@
 package vsukharew.multiple.data.sources.ui.tweets.list
 
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import vsukharew.multiple.data.sources.R
 import vsukharew.multiple.data.sources.data.repository.TweetsRepo
@@ -34,13 +36,16 @@ class TweetsViewModel(
     }
 
     private suspend fun getTweets(loadStrategy: LoadStrategy) {
-        when (val tweets = tweetsRepo.getTweets(loadStrategy)) {
-            is Left -> {
-                setEvent(TweetsEvent.TweetsLoadingError(R.string.error_text))
+        tweetsRepo.getTweets(loadStrategy).onEach {
+            when (it) {
+                is Left -> {
+                    setEvent(TweetsEvent.TweetsLoadingError(R.string.error_text))
+                }
+                is Right -> {
+                    val (tweets, source) = it.data
+                    setEvent(TweetsEvent.TweetsLoaded(tweets, source))
+                }
             }
-            is Right -> tweets.data.collect { (tweets, source) ->
-                setEvent(TweetsEvent.TweetsLoaded(tweets, source))
-            }
-        }
+        }.launchIn(viewModelScope)
     }
 }

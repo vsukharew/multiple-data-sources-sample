@@ -12,5 +12,5 @@ interface TweetsRepo {
         tweetId: String,
         loadStrategy: LoadStrategy
     ): Either<AppError<Any>, Tweet>
-    suspend fun getTweets(loadStrategy: LoadStrategy): Either<AppError<Any>, Flow<Pair<List<Tweet>, Source>>>
+    suspend fun getTweets(loadStrategy: LoadStrategy): Flow<Either<AppError<Any>, Pair<List<Tweet>, Source>>>
 }
