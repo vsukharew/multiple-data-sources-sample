@@ -8,9 +8,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
-import vsukharew.multiple.data.sources.App
 import vsukharew.multiple.data.sources.data.source.local.room.dao.AuthorDao
 import vsukharew.multiple.data.sources.data.source.local.room.dao.PlatformDao
 import vsukharew.multiple.data.sources.data.source.local.room.dao.TweetDao
@@ -242,13 +240,13 @@ class TweetsRepository(
         authorDao: AuthorDao,
         mapper: suspend (TweetResponse, AuthorDao, PlatformDao) -> TweetEntity
     ): List<Long> {
-        return tweets.map {
-            coroutineScope {
+         return coroutineScope {
+            tweets.map {
                 async {
                     val tweetEntity = mapper.invoke(it, authorDao, platformDao)
                     tweetDao.insert(tweetEntity)
                 }
-            }
-        }.awaitAll()
+            }.awaitAll()
+        }
     }
 }
